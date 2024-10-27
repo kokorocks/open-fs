@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Sharing App</title>
+    <script src="https://cdn.peerjs.com/1.3.1/peerjs.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        #fileInput { margin: 20px; }
+        video, img { max-width: 300px; margin: 10px; }
+    </style>
+</head>
+<body>
+    <h1>File Sharing App</h1>
+    <input type="file" id="fileInput" accept="image/*,video/*" multiple />
+    <button id="sendButton">Send Files</button>
+    <input type="text" id="peerId" placeholder="Enter peer ID to connect" />
+    <button id="connectButton">Connect</button>
+    <script>
+        const peer = new Peer();
+
+        // Variable to hold the connection
+        let conn;
+
+        // Connect to another peer
+        document.getElementById('connectButton').onclick = () => {
+            const peerId = document.getElementById('peerId').value;
+            conn = peer.connect(peerId);
+            conn.on('open', () => {
+                console.log('Connected to peer:', peerId);
+            });
+        };
+
+        // Handle incoming connections
+        peer.on('connection', (connection) => {
+            conn = connection;
+            conn.on('open', () => {
+                console.log('Connected to peer:', connection.peer);
+            });
+        });
+
+        // Send files
+        document.getElementById('sendButton').onclick = () => {
+            const files = document.getElementById('fileInput').files;
+            for (const file of files) {
+                conn.send(file);
+            }
+        };
+
+        // Receive files
+        conn.on('data', (data) => {
+            const url = URL.createObjectURL(data);
+            let element;
+
+            // Create appropriate HTML element based on file type
+            if (data.type.startsWith('image/')) {
+                element = document.createElement('img');
+            } else if (data.type.startsWith('video/')) {
+                element = document.createElement('video');
+                element.controls = true; // Add controls for video playback
+            }
+
+            element.src = url;
+            document.body.appendChild(element);
+        });
+
+        // Handle errors
+        peer.on('error', (err) => {
+            console.error(err);
+        });
+    </script>
+</body>
+</html>
